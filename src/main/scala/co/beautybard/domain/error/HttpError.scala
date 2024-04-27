@@ -1,4 +1,4 @@
-package com.dallinhuff.glamfolio.domain.error
+package co.beautybard.domain.error
 
 import sttp.model.StatusCode
 
@@ -15,6 +15,8 @@ object HttpError:
         HttpError(tuple._1, tuple._2, UnauthorizedError(tuple._2))
       case StatusCode.NotFound =>
         HttpError(tuple._1, tuple._2, NotFoundError(tuple._2))
+      case StatusCode.BadRequest =>
+        HttpError(tuple._1, tuple._2, BadRequestError(tuple._2))
       case _ =>
         HttpError(tuple._1, tuple._2, ApplicationError(tuple._2))
 
@@ -22,5 +24,6 @@ object HttpError:
     err match
       case UnauthorizedError(msg) => (StatusCode.Unauthorized, msg)
       case NotFoundError(msg)     => (StatusCode.NotFound, msg)
+      case BadRequestError(msg)   => (StatusCode.BadRequest, msg)
       case _ =>
         (StatusCode.InternalServerError, err.getMessage)

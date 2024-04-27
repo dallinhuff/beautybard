@@ -1,4 +1,4 @@
-package com.dallinhuff.glamfolio.domain.data
+package co.beautybard.domain.data
 
 import zio.json.*
 

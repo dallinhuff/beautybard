@@ -1,6 +1,7 @@
-package com.dallinhuff.glamfolio.http.endpoints
+package co.beautybard.http.endpoints
 
-import com.dallinhuff.glamfolio.domain.error.HttpError
+import co.beautybard.domain.error.HttpError
+import co.beautybard.http.request.PageParams
 import sttp.tapir.*
 
 trait Endpoints:
@@ -12,5 +13,6 @@ trait Endpoints:
   val secureEndpoint: Endpoint[String, Unit, Throwable, Unit, Any] =
     baseEndpoint.securityIn(auth.bearer[String]())
 
-  val paged: EndpointInput[(Option[String], Option[Int])] =
-    query[Option[String]]("last") and query[Option[Int]]("limit")
+  def paged[K]: EndpointInput[PageParams] =
+    (query[String]("by") and query[Option[String]]("last") and query[Option[Int]]("limit"))
+      .mapTo[PageParams]

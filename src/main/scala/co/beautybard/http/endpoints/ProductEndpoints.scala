@@ -1,7 +1,8 @@
-package com.dallinhuff.glamfolio.http.endpoints
+package co.beautybard.http.endpoints
 
-import com.dallinhuff.glamfolio.domain.data.product.*
-import com.dallinhuff.glamfolio.http.request.product.*
+import co.beautybard.domain.data.product.*
+import co.beautybard.http.request.PageParams
+import co.beautybard.http.request.product.*
 import sttp.tapir.*
 import sttp.tapir.json.zio.*
 import sttp.tapir.generic.auto.*
@@ -17,7 +18,8 @@ trait ProductEndpoints extends Endpoints:
       .tag("product")
       .in("product")
 
-  val createProductEndpoint: Endpoint[String, CreateProductRequest, Throwable, CreateProductResponse, Any] =
+  val createProductEndpoint
+      : Endpoint[String, CreateProductRequest, Throwable, CreateProductResponse, Any] =
     secureProductEndpoint
       .name("create")
       .description("create a new product")
@@ -25,7 +27,7 @@ trait ProductEndpoints extends Endpoints:
       .in(jsonBody[CreateProductRequest])
       .out(jsonBody[CreateProductResponse])
 
-  val getAllProductsEndpoint: Endpoint[Unit, (Option[String], Option[Int]), Throwable, List[Product], Any] =
+  val getAllProductsEndpoint: Endpoint[Unit, PageParams, Throwable, List[Product], Any] =
     productEndpoint
       .name("getAll")
       .description("get a page of all products")
@@ -41,7 +43,8 @@ trait ProductEndpoints extends Endpoints:
       .get
       .out(jsonBody[Option[Product]])
 
-  val searchProductsEndpoint: Endpoint[Unit, (ProductFilter, Option[String], Option[Int]), Throwable, List[Product], Any] =
+  val searchProductsEndpoint
+      : Endpoint[Unit, (ProductFilter, PageParams), Throwable, List[Product], Any] =
     productEndpoint
       .name("search")
       .description("search for products that match a product filter")

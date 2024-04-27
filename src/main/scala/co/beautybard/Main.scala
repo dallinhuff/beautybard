@@ -1,10 +1,10 @@
-package com.dallinhuff.glamfolio
+package co.beautybard
 
-import com.dallinhuff.glamfolio.http.HttpApi
-import com.dallinhuff.glamfolio.service.BrandService
+import co.beautybard.http.HttpApi
+import co.beautybard.service.BrandService
 import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
 import zio.{Console, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
-import zio.http.{HttpApp, Server}
+import zio.http.Server
 import zio.logging.LogFormat
 import zio.logging.backend.SLF4J
 
@@ -26,7 +26,7 @@ object Main extends ZIOAppDefault:
           .toHttp(endpoints)
       )
       _ <- Console.printLine(
-        s"Go to http://localhost:${actualPort}/docs to open SwaggerUI. Press ENTER key to exit."
+        s"Go to http://localhost:$actualPort/docs to open SwaggerUI. Press ENTER key to exit."
       )
       _ <- Console.readLine
     yield ()

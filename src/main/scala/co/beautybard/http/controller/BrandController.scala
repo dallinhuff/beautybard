@@ -1,7 +1,8 @@
-package com.dallinhuff.glamfolio.http.controller
+package co.beautybard.http.controller
 
-import com.dallinhuff.glamfolio.http.endpoints.BrandEndpoints
-import com.dallinhuff.glamfolio.service.BrandService
+import co.beautybard.service.BrandService
+import co.beautybard.http.endpoints.BrandEndpoints
+import co.beautybard.service.BrandService
 import sttp.tapir.ztapir.*
 import zio.*
 
@@ -20,11 +21,12 @@ class BrandController private (service: BrandService) extends Controller, BrandE
 
   private val getAll: ZServerEndpoint[Any, Any] =
     getAllBrandsEndpoint.serverLogic:
-      case (last, limit) => service.getAll(last, limit).either
+      service.getAll(_).either
 
   private val search: ZServerEndpoint[Any, Any] =
     searchBrandsEndpoint.serverLogic:
-      case (filter, a, b) => service.search(filter, a, b).either
+      case (filter, pageParams) =>
+        service.search(filter, pageParams).either
 
   val routes: List[ZServerEndpoint[Any, Any]] =
     List(create, getById, getAll, search)

@@ -1,7 +1,8 @@
-package com.dallinhuff.glamfolio.http
+package co.beautybard.http
 
-import com.dallinhuff.glamfolio.http.controller.BrandController
-import com.dallinhuff.glamfolio.service.BrandService
+import co.beautybard.service.BrandService
+import co.beautybard.http.controller.BrandController
+import co.beautybard.service.BrandService
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.*
@@ -10,7 +11,7 @@ import zio.*
 object HttpApi:
   private type R = BrandService
 
-  private val prometheusMetrics = PrometheusMetrics.default[Task]()
+  val prometheusMetrics = PrometheusMetrics.default[Task]()
 
   val endpointsZIO: URIO[R, List[ZServerEndpoint[Any, Any]]] =
     for

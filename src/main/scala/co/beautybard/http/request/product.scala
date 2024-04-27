@@ -1,4 +1,4 @@
-package com.dallinhuff.glamfolio.http.request
+package co.beautybard.http.request
 
 import zio.json.*
 

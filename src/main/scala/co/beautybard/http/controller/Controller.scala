@@ -1,4 +1,4 @@
-package com.dallinhuff.glamfolio.http.controller
+package co.beautybard.http.controller
 
 import sttp.tapir.ztapir.*
 

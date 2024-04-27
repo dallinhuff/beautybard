@@ -2,9 +2,9 @@ val tapirVersion = "1.10.5"
 
 lazy val rootProject = (project in file(".")).settings(
   Seq(
-    name := "glamfolio",
+    name := "beautybard",
     version := "0.1.0-SNAPSHOT",
-    organization := "com.dallinhuff.glamfolio",
+    organization := "co.beautybard",
     scalaVersion := "3.4.1",
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server" % tapirVersion,

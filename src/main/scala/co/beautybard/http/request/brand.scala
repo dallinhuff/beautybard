@@ -1,12 +1,13 @@
-package com.dallinhuff.glamfolio.http.request
+package co.beautybard.http.request
 
-import com.dallinhuff.glamfolio.domain.data.brand.Brand
+import co.beautybard.domain.data.brand.Brand.Quality
+import co.beautybard.domain.data.brand.Brand
 import zio.json.*
 
 object brand:
   case class CreateBrandRequest(
       name: String,
-      quality: Brand.Quality,
+      quality: Quality,
       description: Option[String] = None
   ) derives JsonCodec
   

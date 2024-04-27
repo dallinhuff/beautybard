@@ -1,7 +1,8 @@
-package com.dallinhuff.glamfolio.http.endpoints
+package co.beautybard.http.endpoints
 
-import com.dallinhuff.glamfolio.domain.data.brand.*
-import com.dallinhuff.glamfolio.http.request.brand.*
+import co.beautybard.domain.data.brand.*
+import co.beautybard.http.request.PageParams
+import co.beautybard.http.request.brand.*
 import sttp.tapir.*
 import sttp.tapir.json.zio.*
 import sttp.tapir.generic.auto.*
@@ -27,10 +28,10 @@ trait BrandEndpoints extends Endpoints {
       .in(jsonBody[CreateBrandRequest])
       .out(jsonBody[Brand])
 
-  val getAllBrandsEndpoint: PublicEndpoint[(Option[String], Option[Int]), Throwable, List[Brand], Any] =
+  val getAllBrandsEndpoint: PublicEndpoint[PageParams, Throwable, List[Brand], Any] =
     brandEndpoint
       .name("getAll")
-      .description("get all brands")
+      .description("get all brands ordered")
       .get
       .in(paged)
       .out(jsonBody[List[Brand]])
@@ -43,7 +44,7 @@ trait BrandEndpoints extends Endpoints {
       .get
       .out(jsonBody[Option[Brand]])
 
-  val searchBrandsEndpoint: PublicEndpoint[(BrandFilter, Option[String], Option[Int]), Throwable, List[Brand], Any] =
+  val searchBrandsEndpoint: PublicEndpoint[(BrandFilter, PageParams), Throwable, List[Brand], Any] =
     brandEndpoint
       .name("search")
       .description("search for brands that match a filter")
