@@ -4,8 +4,8 @@ import co.beautybard.domain.data.product.*
 import co.beautybard.http.request.PageParams
 import co.beautybard.http.request.product.*
 import sttp.tapir.*
-import sttp.tapir.json.zio.*
 import sttp.tapir.generic.auto.*
+import sttp.tapir.json.circe.*
 
 trait ProductEndpoints extends Endpoints:
   private val productEndpoint: Endpoint[Unit, Unit, Throwable, Unit, Any] =

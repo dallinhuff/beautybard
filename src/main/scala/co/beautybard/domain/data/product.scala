@@ -1,8 +1,8 @@
 package co.beautybard.domain.data
 
-import zio.json.*
+import io.circe.Codec
 
 object product {
-  case class Product() derives JsonCodec
-  case class ProductFilter() derives JsonCodec
+  case class Product() derives Codec.AsObject
+  case class ProductFilter() derives Codec.AsObject
 }

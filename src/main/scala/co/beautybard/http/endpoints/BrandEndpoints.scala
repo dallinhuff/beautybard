@@ -4,8 +4,8 @@ import co.beautybard.domain.data.brand.*
 import co.beautybard.http.request.PageParams
 import co.beautybard.http.request.brand.*
 import sttp.tapir.*
-import sttp.tapir.json.zio.*
 import sttp.tapir.generic.auto.*
+import sttp.tapir.json.circe.*
 
 import java.util.UUID
 

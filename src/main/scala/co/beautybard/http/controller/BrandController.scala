@@ -1,37 +1,36 @@
 package co.beautybard.http.controller
 
+import cats.effect.IO
 import co.beautybard.service.BrandService
 import co.beautybard.http.endpoints.BrandEndpoints
-import co.beautybard.service.BrandService
-import sttp.tapir.ztapir.*
-import zio.*
+import sttp.tapir.server.*
 
 class BrandController private (service: BrandService) extends Controller, BrandEndpoints:
-  private val create: ZServerEndpoint[Any, Any] =
+  private val create: ServerEndpoint[Any, IO] =
     createBrandEndpoint
       .serverSecurityLogic: t =>
         ???
       .serverLogic: t =>
         ???
 
-  private val getById: ZServerEndpoint[Any, Any] =
+  private val getById: ServerEndpoint[Any, IO] =
     getBrandByIdEndpoint
       .serverLogicSuccess: id =>
         ???
 
-  private val getAll: ZServerEndpoint[Any, Any] =
+  private val getAll: ServerEndpoint[Any, IO] =
     getAllBrandsEndpoint.serverLogic:
-      service.getAll(_).either
+      service.getAll(_).attempt
 
-  private val search: ZServerEndpoint[Any, Any] =
+  private val search: ServerEndpoint[Any, IO] =
     searchBrandsEndpoint.serverLogic:
       case (filter, pageParams) =>
-        service.search(filter, pageParams).either
+        service.search(filter, pageParams).attempt
 
-  val routes: List[ZServerEndpoint[Any, Any]] =
+  val routes: List[ServerEndpoint[Any, IO]] =
     List(create, getById, getAll, search)
 end BrandController
 
 object BrandController:
-  def makeZIO: URIO[BrandService, BrandController] =
-    ZIO.serviceWith[BrandService](BrandController(_))
+  def make(service: BrandService): IO[BrandController] =
+    IO.delay(BrandController(service))

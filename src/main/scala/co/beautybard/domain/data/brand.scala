@@ -1,6 +1,7 @@
 package co.beautybard.domain.data
 
-import zio.json.*
+import io.circe.*
+import io.circe.syntax.*
 
 import java.util.UUID
 
@@ -10,7 +11,7 @@ object brand {
       name: String,
       quality: Brand.Quality,
       description: Option[String] = None
-  ) derives JsonCodec
+  ) derives Codec.AsObject
 
   object Brand:
     enum Quality(val value: String):
@@ -18,12 +19,12 @@ object brand {
       case MidRange extends Quality("mid_range")
       case DrugStore extends Quality("drug_store")
 
-    given JsonCodec[Quality] = JsonCodec(
-      JsonEncoder[String].contramap[Quality](_.value),
-      JsonDecoder.string.mapOrFail: value =>
+    given Codec[Quality] = Codec.from(
+      Decoder[String].emap: value =>
         Quality.values
           .find(_.value == value)
-          .toRight(s"$value is not a valid quality")
+          .toRight(s"$value is not a valid quality"),
+      Encoder[String].contramap[Quality](_.value)
     )
 
   enum BrandOrder(val value: String):
@@ -37,5 +38,5 @@ object brand {
   case class BrandFilter(
       name: Option[String] = None,
       quality: Option[Brand.Quality] = None
-  ) derives JsonCodec
+  ) derives Codec.AsObject
 }

@@ -1,7 +1,7 @@
 package co.beautybard.http.request
 
-import zio.json.*
+import io.circe.Codec
 
 object product:
-  case class CreateProductRequest() derives JsonCodec
-  case class CreateProductResponse() derives JsonCodec
+  case class CreateProductRequest() derives Codec.AsObject
+  case class CreateProductResponse() derives Codec.AsObject

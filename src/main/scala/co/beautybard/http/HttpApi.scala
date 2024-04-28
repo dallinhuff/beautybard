@@ -1,26 +1,24 @@
 package co.beautybard.http
 
+import cats.effect.IO
 import co.beautybard.service.BrandService
 import co.beautybard.http.controller.BrandController
-import co.beautybard.service.BrandService
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
-import sttp.tapir.ztapir.*
-import zio.*
+import sttp.tapir.server.*
 
 object HttpApi:
-  private type R = BrandService
+  val prometheusMetrics = PrometheusMetrics.default[IO]()
 
-  val prometheusMetrics = PrometheusMetrics.default[Task]()
-
-  val endpointsZIO: URIO[R, List[ZServerEndpoint[Any, Any]]] =
+  val endpointsIO: IO[List[ServerEndpoint[Any, IO]]] =
     for
       apiEndpoints <- makeControllers.map(_.flatMap(_.routes))
-      docEndpoints = SwaggerInterpreter().fromServerEndpoints[Task](apiEndpoints, "glamfolio", "1.0.0")
+      docEndpoints = SwaggerInterpreter().fromServerEndpoints[IO](apiEndpoints, "glamfolio", "1.0.0")
       metricsEndpoint = prometheusMetrics.metricsEndpoint
     yield apiEndpoints ++ docEndpoints ++ List(metricsEndpoint)
 
   private def makeControllers =
     for
-      brand <- BrandController.makeZIO
+      service <- BrandService.make
+      brand <- BrandController.make(service)
     yield List(brand)

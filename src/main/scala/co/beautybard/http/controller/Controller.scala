@@ -1,6 +1,7 @@
 package co.beautybard.http.controller
 
-import sttp.tapir.ztapir.*
+import cats.effect.IO
+import sttp.tapir.server.*
 
 trait Controller:
-  def routes: List[ZServerEndpoint[Any, Any]]
+  def routes: List[ServerEndpoint[Any, IO]]
