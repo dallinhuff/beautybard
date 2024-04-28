@@ -9,10 +9,12 @@ lazy val rootProject = (project in file(".")).settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "org.http4s" %% "http4s-ember-server" % "0.23.26",
+      "com.github.pureconfig"       %% "pureconfig-cats-effect" % "0.17.6",
       "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
       "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "org.tpolecat" %% "skunk-core" % "0.6.3",
       "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test,
       "org.scalatest" %% "scalatest" % "3.2.18" % Test,
       "com.softwaremill.sttp.client3" %% "circe" % "3.9.5" % Test

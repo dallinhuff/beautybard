@@ -5,6 +5,7 @@ import co.beautybard.domain.data.brand.*
 import co.beautybard.domain.error.BadRequestError
 import co.beautybard.http.request.PageParams
 import co.beautybard.http.request.brand.CreateBrandRequest
+import co.beautybard.repository.BrandRepository
 
 import java.util.UUID
 
@@ -18,7 +19,7 @@ trait BrandService {
   ): IO[List[Brand]]
 }
 
-class BrandServiceLive extends BrandService {
+class BrandServiceLive (repo: BrandRepository) extends BrandService {
   private lazy val items = List(
     Brand(UUID.randomUUID, "boolin", Brand.Quality.Luxury, Some("a really nice brand")),
     Brand(UUID.randomUUID, "bussin", Brand.Quality.MidRange),
@@ -26,10 +27,10 @@ class BrandServiceLive extends BrandService {
   )
 
   override def create(req: CreateBrandRequest): IO[Brand] =
-    IO.pure(Brand(UUID.randomUUID, req.name, req.quality, req.description))
+    repo.create(Brand(UUID.randomUUID, req.name, req.quality, req.description))
 
   override def getById(id: UUID): IO[Option[Brand]] =
-    IO.some(Brand(UUID.randomUUID, "boolin", Brand.Quality.Luxury, Some("a really nice brand")))
+    repo.getById(id)
 
   override def getAll(pageParams: PageParams): IO[List[Brand]] =
     for
@@ -38,9 +39,8 @@ class BrandServiceLive extends BrandService {
         .find(_.value == kind)
         .toRight(BadRequestError(s"unknown brand order: $kind"))
       order <- IO.fromEither(maybeOrder)
-    yield order match
-      case BrandOrder.Id   => items.sortBy(_.id)
-      case BrandOrder.Name => items.sortBy(_.name)
+      brand <- repo.getAll(order, last, limit).compile.toList
+    yield brand
 
   override def search(
     filter: BrandFilter,
@@ -60,6 +60,6 @@ class BrandServiceLive extends BrandService {
 }
 
 object BrandService {
-  val make: IO[BrandService] =
-    IO.delay(BrandServiceLive())
+  def make(repo: BrandRepository): IO[BrandService] =
+    IO.delay(BrandServiceLive(repo))
 }

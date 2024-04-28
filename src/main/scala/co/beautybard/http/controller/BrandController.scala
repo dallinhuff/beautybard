@@ -14,9 +14,8 @@ class BrandController private (service: BrandService) extends Controller, BrandE
         ???
 
   private val getById: ServerEndpoint[Any, IO] =
-    getBrandByIdEndpoint
-      .serverLogicSuccess: id =>
-        ???
+    getBrandByIdEndpoint.serverLogic:
+      service.getById(_).attempt
 
   private val getAll: ServerEndpoint[Any, IO] =
     getAllBrandsEndpoint.serverLogic:

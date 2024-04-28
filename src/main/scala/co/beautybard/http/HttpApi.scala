@@ -1,8 +1,10 @@
 package co.beautybard.http
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
+import co.beautybard.config.ApplicationConfig
 import co.beautybard.service.BrandService
 import co.beautybard.http.controller.BrandController
+import co.beautybard.repository.{BrandRepositoryLive, SessionPool}
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.server.*
@@ -12,13 +14,17 @@ object HttpApi:
 
   val endpointsIO: IO[List[ServerEndpoint[Any, IO]]] =
     for
-      apiEndpoints <- makeControllers.map(_.flatMap(_.routes))
-      docEndpoints = SwaggerInterpreter().fromServerEndpoints[IO](apiEndpoints, "glamfolio", "1.0.0")
+      apiEndpoints <- controllers.use(cs => IO.pure(cs.flatMap(_.routes)))
+      docEndpoints = SwaggerInterpreter()
+        .fromServerEndpoints[IO](apiEndpoints, "glamfolio", "1.0.0")
       metricsEndpoint = prometheusMetrics.metricsEndpoint
     yield apiEndpoints ++ docEndpoints ++ List(metricsEndpoint)
 
-  private def makeControllers =
+  private def controllers =
     for
-      service <- BrandService.make
-      brand <- BrandController.make(service)
-    yield List(brand)
+      cfg <- ApplicationConfig.resource[IO]
+      pool <- SessionPool.fromConfig(cfg.db)
+      repo = BrandRepositoryLive(pool)
+      service <- Resource.eval(BrandService.make(repo))
+      brandController <- Resource.eval(BrandController.make(service))
+    yield List(brandController)
