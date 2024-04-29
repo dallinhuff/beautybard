@@ -12,7 +12,7 @@ trait Endpoints:
 
   val secureEndpoint: Endpoint[String, Unit, Throwable, Unit, Any] =
     baseEndpoint.securityIn(auth.bearer[String]())
-
-  def paged[K]: EndpointInput[PageParams] =
+  
+  def paged: EndpointInput[PageParams] =
     (query[String]("by") and query[Option[String]]("last") and query[Option[Int]]("limit"))
       .mapTo[PageParams]

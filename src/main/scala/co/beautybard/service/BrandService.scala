@@ -1,31 +1,23 @@
 package co.beautybard.service
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import co.beautybard.domain.data.brand.*
-import co.beautybard.domain.error.BadRequestError
 import co.beautybard.http.request.PageParams
 import co.beautybard.http.request.brand.CreateBrandRequest
 import co.beautybard.repository.BrandRepository
 
 import java.util.UUID
 
-trait BrandService {
+trait BrandService:
   def create(req: CreateBrandRequest): IO[Brand]
   def getById(id: UUID): IO[Option[Brand]]
   def getAll(pageParams: PageParams): IO[List[Brand]]
   def search(
-    filter: BrandFilter,
-    pageParams: PageParams
+      filter: BrandFilter,
+      pageParams: PageParams
   ): IO[List[Brand]]
-}
 
-class BrandServiceLive (repo: BrandRepository) extends BrandService {
-  private lazy val items = List(
-    Brand(UUID.randomUUID, "boolin", Brand.Quality.Luxury, Some("a really nice brand")),
-    Brand(UUID.randomUUID, "bussin", Brand.Quality.MidRange),
-    Brand(UUID.randomUUID, "nuffin", Brand.Quality.DrugStore)
-  )
-
+class BrandServiceLive private (repo: BrandRepository) extends BrandService:
   override def create(req: CreateBrandRequest): IO[Brand] =
     repo.create(Brand(UUID.randomUUID, req.name, req.quality, req.description))
 
@@ -35,31 +27,25 @@ class BrandServiceLive (repo: BrandRepository) extends BrandService {
   override def getAll(pageParams: PageParams): IO[List[Brand]] =
     for
       PageParams(kind, last, limit) <- IO.pure(pageParams)
-      maybeOrder = BrandOrder.values
-        .find(_.value == kind)
-        .toRight(BadRequestError(s"unknown brand order: $kind"))
-      order <- IO.fromEither(maybeOrder)
+
+      order <- IO.fromEither(BrandOrder.of(kind))
       brand <- repo.getAll(order, last, limit).compile.toList
     yield brand
 
   override def search(
-    filter: BrandFilter,
-    pageParams: PageParams
+      filter: BrandFilter,
+      pageParams: PageParams
   ): IO[List[Brand]] =
     for
       PageParams(kind, last, limit) <- IO.pure(pageParams)
-      maybeOrder = BrandOrder.of(kind).toRight(BadRequestError("unknown brand order"))
-      order <- IO.fromEither(maybeOrder)
-      passingFilter =
-        items.filter: i =>
-          i.name.contains(filter.name.getOrElse(""))
-            && (filter.quality.isEmpty || i.quality == filter.quality.get)
-    yield order match
-      case BrandOrder.Id => passingFilter.sortBy(_.id)
-      case BrandOrder.Name => passingFilter.sortBy(_.name)
-}
+      order <- IO.fromEither(BrandOrder.of(kind))
+      f = filter.copy(name = filter.name.map(_ :+ '%'))
+      brand <- repo.search(f, order, last, limit).compile.toList
+    yield brand
 
-object BrandService {
+object BrandServiceLive:
   def make(repo: BrandRepository): IO[BrandService] =
     IO.delay(BrandServiceLive(repo))
-}
+
+  def resource(repo: Resource[IO, BrandRepository]): Resource[IO, BrandService] =
+    repo.evalMap(make)

@@ -34,11 +34,11 @@ object Main extends IOApp:
         .build
     yield s
 
-
-    server.use { server =>
-        for {
-          _ <- IO.println(s"Go to http://localhost:${server.address.getPort}/docs to open SwaggerUI. Press ENTER key to exit.")
+    server
+      .use: server =>
+        for
+          _ <- IO.println:
+            s"Go to http://localhost:${server.address.getPort}/docs to open SwaggerUI. Press ENTER key to exit."
           _ <- IO.readLine
-        } yield ()
-      }
+        yield ()
       .as(ExitCode.Success)

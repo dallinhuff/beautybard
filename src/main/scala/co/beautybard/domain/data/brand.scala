@@ -1,5 +1,6 @@
 package co.beautybard.domain.data
 
+import co.beautybard.domain.error.BadRequestError
 import io.circe.*
 import io.circe.syntax.*
 
@@ -26,14 +27,15 @@ object brand {
           .toRight(s"$value is not a valid quality"),
       Encoder[String].contramap[Quality](_.value)
     )
+  end Brand
 
   enum BrandOrder(val value: String):
     case Id extends BrandOrder("id")
     case Name extends BrandOrder("name")
 
   object BrandOrder:
-    def of(s: String): Option[BrandOrder] =
-      values.find(_.value == s)
+    def of(s: String): Either[BadRequestError, BrandOrder] =
+      values.find(_.value == s).toRight(BadRequestError(s"Invalid brand ordering: $s"))
 
   case class BrandFilter(
       name: Option[String] = None,
