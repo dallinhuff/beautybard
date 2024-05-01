@@ -1,6 +1,7 @@
 package co.beautybard
 
 import cats.effect.{ExitCode, IO, IOApp, Resource}
+import cats.syntax.all.*
 import co.beautybard.http.HttpApi
 import com.comcast.ip4s.{Host, Port, port}
 import org.http4s.ember.server.EmberServerBuilder
@@ -16,12 +17,8 @@ object Main extends IOApp:
         .customiseInterceptors[IO]
         .metricsInterceptor(HttpApi.prometheusMetrics.metricsInterceptor())
         .options
-
-    val port = sys.env
-      .get("HTTP_PORT")
-      .flatMap(_.toIntOption)
-      .flatMap(Port.fromInt)
-      .getOrElse(port"8080")
+    
+    val port = sys.env.get("HTTP_PORT") >>= (_.toIntOption) >>= Port.fromInt
 
     val server = for
       endpoints <- Resource.eval(HttpApi.endpointsIO)
@@ -29,7 +26,7 @@ object Main extends IOApp:
       s <- EmberServerBuilder
         .default[IO]
         .withHost(Host.fromString("localhost").get)
-        .withPort(port)
+        .withPort(port.getOrElse(port"8080"))
         .withHttpApp(Router("/" -> routes).orNotFound)
         .build
     yield s

@@ -5,31 +5,37 @@ import co.beautybard.service.BrandService
 import co.beautybard.http.endpoints.BrandEndpoints
 import sttp.tapir.server.*
 
-class BrandController private (service: BrandService) extends Controller, BrandEndpoints:
-  private val create: ServerEndpoint[Any, IO] =
+trait BrandController[F[_]] extends Controller[F], BrandEndpoints:
+  val create: ServerEndpoint[Any, F]
+  val getById: ServerEndpoint[Any, F]
+  val getAll: ServerEndpoint[Any, F]
+  val search: ServerEndpoint[Any, F]
+
+class BrandControllerLive private (service: BrandService[IO]) extends BrandController[IO]:
+  override val create: ServerEndpoint[Any, IO] =
     createBrandEndpoint
       .serverSecurityLogic: t =>
         ???
       .serverLogic: t =>
         ???
 
-  private val getById: ServerEndpoint[Any, IO] =
+  override val getById: ServerEndpoint[Any, IO] =
     getBrandByIdEndpoint.serverLogic:
       service.getById(_).attempt
 
-  private val getAll: ServerEndpoint[Any, IO] =
+  override val getAll: ServerEndpoint[Any, IO] =
     getAllBrandsEndpoint.serverLogic:
       service.getAll(_).attempt
 
-  private val search: ServerEndpoint[Any, IO] =
+  override val search: ServerEndpoint[Any, IO] =
     searchBrandsEndpoint.serverLogic:
       case (filter, pageParams) =>
         service.search(filter, pageParams).attempt
 
-  val routes: List[ServerEndpoint[Any, IO]] =
+  override val routes: List[ServerEndpoint[Any, IO]] =
     List(create, getById, getAll, search)
-end BrandController
+end BrandControllerLive
 
-object BrandController:
-  def make(service: BrandService): IO[BrandController] =
-    IO.delay(BrandController(service))
+object BrandControllerLive:
+  def make(service: BrandService[IO]): IO[BrandController[IO]] =
+    IO.delay(BrandControllerLive(service))

@@ -10,22 +10,23 @@ import fs2.Stream
 
 import java.util.UUID
 
-trait BrandRepository:
-  def create(brand: Brand): IO[Brand]
-  def getById(id: UUID): IO[Option[Brand]]
+trait BrandRepository[F[_]]:
+  def create(brand: Brand): F[Brand]
+  def getById(id: UUID): F[Option[Brand]]
   def getAll(
       brandOrder: BrandOrder,
       last: Option[String] = None,
       limit: Option[Int] = None
-  ): Stream[IO, Brand]
+  ): Stream[F, Brand]
   def search(
       brandFilter: BrandFilter,
       brandOrder: BrandOrder,
       last: Option[String] = None,
       limit: Option[Int] = None
-  ): Stream[IO, Brand]
+  ): Stream[F, Brand]
 
-class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]]) extends BrandRepository:
+class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
+    extends BrandRepository[IO]:
   override def create(brand: Brand): IO[Brand] =
     sessionPool.use: session =>
       session.prepare(BrandRepositoryLive.create).flatMap(_.unique(brand))
@@ -41,10 +42,10 @@ class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]]) extends BrandR
   ): Stream[IO, Brand] =
     for
       session <- Stream.resource(sessionPool)
-      f = BrandRepositoryLive.getAll(brandOrder, last, limit)
-      pq <- Stream.eval(session.prepare(f.fragment.query(BrandRepositoryLive.brand)))
-      b <- pq.stream(f.argument, 32)
-    yield b
+      query = BrandRepositoryLive.getAll(brandOrder, last, limit)
+      preparedQuery <- Stream.eval(session.prepare(query.fragment.query(BrandRepositoryLive.brand)))
+      brand <- preparedQuery.stream(query.argument, 32)
+    yield brand
 
   override def search(
       brandFilter: BrandFilter,
@@ -54,10 +55,10 @@ class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]]) extends BrandR
   ): Stream[IO, Brand] =
     for
       session <- Stream.resource(sessionPool)
-      f = BrandRepositoryLive.search(brandFilter, brandOrder, last, limit)
-      pq <- Stream.eval(session.prepare(f.fragment.query(BrandRepositoryLive.brand)))
-      b <- pq.stream(f.argument, 32)
-    yield b
+      query = BrandRepositoryLive.search(brandFilter, brandOrder, last, limit)
+      preparedQuery <- Stream.eval(session.prepare(query.fragment.query(BrandRepositoryLive.brand)))
+      brand <- preparedQuery.stream(query.argument, 32)
+    yield brand
 
 object BrandRepositoryLive:
   private val quality: Codec[Brand.Quality] =

@@ -9,7 +9,7 @@ import sttp.tapir.json.circe.*
 
 import java.util.UUID
 
-trait BrandEndpoints extends Endpoints {
+trait BrandEndpoints extends Endpoints:
   private val brandEndpoint: PublicEndpoint[Unit, Throwable, Unit, Any] =
     baseEndpoint
       .tag("brands")
@@ -52,4 +52,3 @@ trait BrandEndpoints extends Endpoints {
       .post
       .in(jsonBody[BrandFilter] and paged)
       .out(jsonBody[List[Brand]])
-}

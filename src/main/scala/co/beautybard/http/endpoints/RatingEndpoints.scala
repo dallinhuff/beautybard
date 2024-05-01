@@ -1,5 +1,3 @@
 package co.beautybard.http.endpoints
 
-trait RatingEndpoints extends Endpoints {
-
-}
+trait RatingEndpoints extends Endpoints
