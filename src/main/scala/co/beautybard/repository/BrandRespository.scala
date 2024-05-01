@@ -26,26 +26,24 @@ trait BrandRepository[F[_]]:
   ): Stream[F, Brand]
 
 class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
-    extends BrandRepository[IO]:
+    extends BrandRepository[IO],
+      SkunkRepository[IO, Brand](sessionPool):
+  import BrandRepositoryLive.*
+
   override def create(brand: Brand): IO[Brand] =
     sessionPool.use: session =>
-      session.prepare(BrandRepositoryLive.create).flatMap(_.unique(brand))
+      session.prepare(_create).flatMap(_.unique(brand))
 
   override def getById(id: UUID): IO[Option[Brand]] =
-    sessionPool.use: session =>
-      session.prepare(BrandRepositoryLive.getById).flatMap(_.option(id))
+    findOneBy(_getById, id)
 
   override def getAll(
       brandOrder: BrandOrder,
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    for
-      session <- Stream.resource(sessionPool)
-      query = BrandRepositoryLive.getAll(brandOrder, last, limit)
-      preparedQuery <- Stream.eval(session.prepare(query.fragment.query(BrandRepositoryLive.brand)))
-      brand <- preparedQuery.stream(query.argument, 32)
-    yield brand
+    val query = _getAll(brandOrder, last, limit)
+    findManyBy(query.fragment.query(brand), query.argument)
 
   override def search(
       brandFilter: BrandFilter,
@@ -53,12 +51,8 @@ class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    for
-      session <- Stream.resource(sessionPool)
-      query = BrandRepositoryLive.search(brandFilter, brandOrder, last, limit)
-      preparedQuery <- Stream.eval(session.prepare(query.fragment.query(BrandRepositoryLive.brand)))
-      brand <- preparedQuery.stream(query.argument, 32)
-    yield brand
+    val query = _search(brandFilter, brandOrder, last, limit)
+    findManyBy(query.fragment.query(brand), query.argument)
 
 object BrandRepositoryLive:
   private val quality: Codec[Brand.Quality] =
@@ -67,11 +61,11 @@ object BrandRepositoryLive:
     )(_.value)
 
   private val brand: Codec[Brand] =
-    (uuid *: varchar(32) *: quality *: text.opt).imap(Brand.apply.tupled)((b: Brand) =>
-      (b.id, b.name, b.quality, b.description)
-    )
+    inline def g(b: Brand) = b match
+      case Brand(id, name, quality, description) => (id, name, quality, description)
+    (uuid, varchar(32), quality, text.opt).tupled.imap(Brand.apply)(g)
 
-  private val create =
+  private val _create =
     sql"""
       insert into brand (name, quality, description)
       values (${varchar(32)}, $quality, ${text.opt})
@@ -81,14 +75,30 @@ object BrandRepositoryLive:
       .contramap[Brand]:
         case Brand(_, n, q, d) => (n, q, d)
 
-  private val getById =
+  private val _getById =
     sql"""
       select id, name, quality, description
       from brand
       where id = $uuid
     """.query(brand)
 
-  private def getAll(by: BrandOrder, last: Option[String], limit: Option[Int]): AppliedFragment =
+  private def buildFinal(
+      base: Fragment[Void],
+      conds: List[AppliedFragment],
+      by: BrandOrder,
+      limit: Option[Int]
+  ): AppliedFragment =
+    val filterR =
+      if (conds.isEmpty) AppliedFragment.empty
+      else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty)
+
+    val ordering = by match
+      case BrandOrder.Id => sql" ORDER BY id LIMIT $int4 "
+      case BrandOrder.Name => sql" ORDER BY name LIMIT $int4 "
+
+    base(Void) |+| filterR |+| ordering(limit.getOrElse(32))
+
+  private def _getAll(by: BrandOrder, last: Option[String], limit: Option[Int]): AppliedFragment =
     val base = sql"SELECT id, name, quality, description FROM brand"
 
     val idGreaterThan = sql"id > $uuid"
@@ -98,17 +108,9 @@ object BrandRepositoryLive:
       case BrandOrder.Id   => List(last.map(s => idGreaterThan(UUID.fromString(s)))).flatten
       case BrandOrder.Name => List(last.map(nameGreaterThan)).flatten
 
-    val filterR =
-      if (conds.isEmpty) AppliedFragment.empty
-      else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty)
+    buildFinal(base, conds, by, limit)
 
-    val ordering = by match
-      case BrandOrder.Id   => sql" ORDER BY id LIMIT $int4 "
-      case BrandOrder.Name => sql" ORDER BY name LIMIT $int4 "
-
-    base(Void) |+| filterR |+| ordering(limit.getOrElse(32))
-
-  private def search(
+  private def _search(
       brandFilter: BrandFilter,
       by: BrandOrder,
       last: Option[String],
@@ -129,14 +131,4 @@ object BrandRepositoryLive:
 
     val conds = cursorConds ++ filterConds
 
-    val filterR =
-      if (conds.isEmpty) AppliedFragment.empty
-      else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty)
-
-    val ordering = by match
-      case BrandOrder.Id   => sql" ORDER BY id LIMIT $int4 "
-      case BrandOrder.Name => sql" ORDER BY name LIMIT $int4 "
-
-    sql"SELECT id, name, quality, description FROM brand" (Void) |+|
-      filterR |+|
-      ordering(limit.getOrElse(32))
+    buildFinal(sql"SELECT id, name, quality, description FROM brand", conds, by, limit)
