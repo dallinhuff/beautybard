@@ -1,8 +1,8 @@
 package co.beautybard.domain.data
 
+import cats.syntax.all.*
 import co.beautybard.domain.error.BadRequestError
 import io.circe.*
-import io.circe.syntax.*
 
 import java.util.UUID
 
@@ -11,6 +11,7 @@ object brand {
       id: UUID,
       name: String,
       quality: Brand.Quality,
+      imageUrl: Option[String] = None,
       description: Option[String] = None
   ) derives Codec.AsObject
 

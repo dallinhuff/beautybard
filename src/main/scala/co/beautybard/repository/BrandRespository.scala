@@ -42,8 +42,10 @@ class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    val query = _getAll(brandOrder, last, limit)
-    findManyBy(query.fragment.query(brand), query.argument)
+    for
+      query <- Stream.eval(IO.pure(_getAll(brandOrder, last, limit)))
+      result <- findManyBy(query.fragment.query(brand), query.argument)
+    yield result
 
   override def search(
       brandFilter: BrandFilter,
@@ -51,8 +53,10 @@ class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    val query = _search(brandFilter, brandOrder, last, limit)
-    findManyBy(query.fragment.query(brand), query.argument)
+    for
+      query <- Stream.eval(IO.pure(_search(brandFilter, brandOrder, last, limit)))
+      result <- findManyBy(query.fragment.query(brand), query.argument)
+    yield result
 
 object BrandRepositoryLive:
   private val quality: Codec[Brand.Quality] =
@@ -62,18 +66,18 @@ object BrandRepositoryLive:
 
   private val brand: Codec[Brand] =
     inline def g(b: Brand) = b match
-      case Brand(id, name, quality, description) => (id, name, quality, description)
-    (uuid, varchar(32), quality, text.opt).tupled.imap(Brand.apply)(g)
+      case Brand(id, name, quality, image, description) => (id, name, quality, image, description)
+    (uuid, varchar(32), quality, text.opt, text.opt).tupled.imap(Brand.apply)(g)
 
   private val _create =
     sql"""
-      insert into brand (name, quality, description)
-      values (${varchar(32)}, $quality, ${text.opt})
+      insert into brand (name, quality, image_url, description)
+      values (${varchar(32)}, $quality, ${text.opt}, ${text.opt})
       returning id, name, quality, description
     """
       .query(brand)
       .contramap[Brand]:
-        case Brand(_, n, q, d) => (n, q, d)
+        case Brand(_, n, q, i, d) => (n, q, i, d)
 
   private val _getById =
     sql"""
@@ -93,7 +97,7 @@ object BrandRepositoryLive:
       else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty)
 
     val ordering = by match
-      case BrandOrder.Id => sql" ORDER BY id LIMIT $int4 "
+      case BrandOrder.Id   => sql" ORDER BY id LIMIT $int4 "
       case BrandOrder.Name => sql" ORDER BY name LIMIT $int4 "
 
     base(Void) |+| filterR |+| ordering(limit.getOrElse(32))
