@@ -25,94 +25,66 @@ trait BrandRepository[F[_]]:
       limit: Option[Int] = None
   ): Stream[F, Brand]
 
-class BrandRepositoryLive(sessionPool: Resource[IO, Session[IO]])
-    extends BrandRepository[IO],
-      SkunkRepository[IO, Brand](sessionPool):
+class BrandRepositoryLive(override val sessionPool: Resource[IO, Session[IO]])
+    extends BrandRepository[IO]
+    with SkunkRepository[IO, Brand]:
   import BrandRepositoryLive.*
-
   override def create(brand: Brand): IO[Brand] =
-    sessionPool.use: session =>
-      session.prepare(_create).flatMap(_.unique(brand))
-
+    expectOneBy(_create, brand)
   override def getById(id: UUID): IO[Option[Brand]] =
     findOneBy(_getById, id)
-
   override def getAll(
       brandOrder: BrandOrder,
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    for
-      query <- Stream.eval(IO.pure(_getAll(brandOrder, last, limit)))
-      result <- findManyBy(query.fragment.query(brand), query.argument)
-    yield result
-
+    findManyBy(_getAll(brandOrder, last, limit))(using BrandCodec.brand)
   override def search(
       brandFilter: BrandFilter,
       brandOrder: BrandOrder,
       last: Option[String],
       limit: Option[Int]
   ): Stream[IO, Brand] =
-    for
-      query <- Stream.eval(IO.pure(_search(brandFilter, brandOrder, last, limit)))
-      result <- findManyBy(query.fragment.query(brand), query.argument)
-    yield result
+    findManyBy(_search(brandFilter, brandOrder, last, limit))(using BrandCodec.brand)
+end BrandRepositoryLive
 
 object BrandRepositoryLive:
-  private val quality: Codec[Brand.Quality] =
-    varchar(32).eimap(s =>
-      Brand.Quality.values.find(_.value == s).toRight("Invalid brand quality")
-    )(_.value)
-
-  private val brand: Codec[Brand] =
-    inline def g(b: Brand) = b match
-      case Brand(id, name, quality, image, description) => (id, name, quality, image, description)
-    (uuid, varchar(32), quality, text.opt, text.opt).tupled.imap(Brand.apply)(g)
+  import BrandCodec.*
+  private val base = "id, name, quality, image_url, description"
 
   private val _create =
     sql"""
-      insert into brand (name, quality, image_url, description)
-      values (${varchar(32)}, $quality, ${text.opt}, ${text.opt})
-      returning id, name, quality, description
+      INSERT INTO brand (name, quality, image_url, description)
+      VALUES ($name, $quality, $image_url, $description)
+      RETURNING #$base
     """
       .query(brand)
       .contramap[Brand]:
         case Brand(_, n, q, i, d) => (n, q, i, d)
 
   private val _getById =
-    sql"""
-      select id, name, quality, description
-      from brand
-      where id = $uuid
-    """.query(brand)
+    sql"SELECT #$base FROM brand WHERE id = $uuid".query(brand)
 
   private def buildFinal(
-      base: Fragment[Void],
       conds: List[AppliedFragment],
       by: BrandOrder,
       limit: Option[Int]
   ): AppliedFragment =
-    val filterR =
-      if (conds.isEmpty) AppliedFragment.empty
-      else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty)
-
-    val ordering = by match
-      case BrandOrder.Id   => sql" ORDER BY id LIMIT $int4 "
-      case BrandOrder.Name => sql" ORDER BY name LIMIT $int4 "
-
-    base(Void) |+| filterR |+| ordering(limit.getOrElse(32))
+    sql"select #$base from brand" (Void)
+      |+| (if conds.isEmpty then AppliedFragment.empty
+           else conds.foldSmash(void" WHERE ", void" AND ", AppliedFragment.empty))
+      |+| sql" ORDER BY #${by.value} LIMIT $int4" (limit.getOrElse(32))
 
   private def _getAll(by: BrandOrder, last: Option[String], limit: Option[Int]): AppliedFragment =
-    val base = sql"SELECT id, name, quality, description FROM brand"
-
-    val idGreaterThan = sql"id > $uuid"
-    val nameGreaterThan = sql"name > ${varchar(32)}"
-
     val conds: List[AppliedFragment] = by match
-      case BrandOrder.Id   => List(last.map(s => idGreaterThan(UUID.fromString(s)))).flatten
-      case BrandOrder.Name => List(last.map(nameGreaterThan)).flatten
+      case BrandOrder.Id   => List(last.map(sql"id > $uuid".contramap(UUID.fromString))).flatten
+      case BrandOrder.Name => List(last.map(sql"name > $name")).flatten
+    buildFinal(conds, by, limit)
 
-    buildFinal(base, conds, by, limit)
+  private def cursorFilter(by: BrandOrder, last: Option[String]): Option[AppliedFragment] =
+    by match
+      case BrandOrder.Id   => last.map(sql"id > $uuid".contramap(UUID.fromString))
+      case BrandOrder.Name => last.map(sql"name > $name")
 
   private def _search(
       brandFilter: BrandFilter,
@@ -120,19 +92,25 @@ object BrandRepositoryLive:
       last: Option[String],
       limit: Option[Int]
   ): AppliedFragment =
-    val idGreaterThan = sql"id > $uuid".contramap[String](UUID.fromString)
+    val conds: List[AppliedFragment] =
+      List(
+        cursorFilter(by, last),
+        brandFilter.name.map(sql"name ILIKE $name"),
+        brandFilter.quality.map(sql"quality = $quality")
+      ).flatten
 
-    val filterConds: List[AppliedFragment] = brandFilter match
-      case BrandFilter(name, quality) =>
-        List(
-          name.map(sql"name ILIKE ${varchar(32)}"),
-          quality.map(sql"quality = ${BrandRepositoryLive.quality}")
-        ).flatten
+    buildFinal(conds, by, limit)
 
-    val cursorConds: List[AppliedFragment] = by match
-      case BrandOrder.Id   => List(last.map(idGreaterThan)).flatten
-      case BrandOrder.Name => List(last.map(sql"name > ${varchar(32)}")).flatten
+object BrandCodec:
+  // columns
+  val id: Codec[UUID]     = uuid
+  val name: Codec[String] = varchar(64)
+  val quality: Codec[Brand.Quality] =
+    varchar(32).eimap(s =>
+      Brand.Quality.values.find(_.value == s).toRight("Invalid brand quality")
+    )(_.value)
+  val image_url: Codec[Option[String]]   = text.opt
+  val description: Codec[Option[String]] = text.opt
 
-    val conds = cursorConds ++ filterConds
-
-    buildFinal(sql"SELECT id, name, quality, description FROM brand", conds, by, limit)
+  // whole thing
+  val brand: Codec[Brand] = (id, name, quality, image_url, description).tupled.to[Brand]
