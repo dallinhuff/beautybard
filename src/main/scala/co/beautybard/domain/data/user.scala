@@ -6,13 +6,15 @@ import skunk.codec.all.*
 
 import java.util.UUID
 
-object user {
+object user:
   case class User(
       id: UUID,
       username: String,
       imageUrl: Option[String],
       bio: Option[String]
-  ) derives circe.Codec.AsObject
+  ) derives circe.Codec.AsObject:
+    def toUserId: UserId =
+      UserId(id, username)
 
   case class FullUser(
       id: UUID,
@@ -21,23 +23,16 @@ object user {
       password: String,
       imageUrl: Option[String],
       bio: Option[String]
-  ) derives circe.Codec.AsObject
+  ) derives circe.Codec.AsObject:
+    def toUser: User =
+      User(id, username, imageUrl, bio)
+    def toCredentials: UserCredentials =
+      UserCredentials(username, password)
+    def toUserId: UserId =
+      UserId(id, username)
 
-  case class UserCredentials(
-      username: String,
-      password: String
-  ) derives circe.Codec.AsObject
+  case class UserCredentials(username: String, password: String) derives circe.Codec.AsObject
 
-  case class UserToken(
-      userId: UUID,
-      token: String,
-      expires: Long
-  ) derives circe.Codec.AsObject
+  case class UserToken(userId: UUID, token: String, expires: Long) derives circe.Codec.AsObject
 
-  given skunk.Codec[User] =
-    (uuid, varchar(32), text.opt, text.opt).tupled.to[User]
-  given skunk.Codec[FullUser] =
-    (uuid, varchar(32), varchar(128), text, text.opt, text.opt).tupled.to[FullUser]
-  given skunk.Codec[UserCredentials] =
-    (varchar(32), text).tupled.to[UserCredentials]
-}
+  case class UserId(id: UUID, username: String)

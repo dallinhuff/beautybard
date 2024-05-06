@@ -11,7 +11,7 @@ trait UserController[F[_]] extends Controller[F], UserEndpoints:
   val logout: ServerEndpoint[Any, F]
   val getById: ServerEndpoint[Any, F]
 
-class UserControllerLive private (service: UserService[IO]) extends UserController[IO] {
+class UserControllerLive private (service: UserService[IO]) extends UserController[IO]:
   override val login: ServerEndpoint[Any, IO] =
     loginEndpoint.serverLogic(service.login(_).attempt)
   override val register: ServerEndpoint[Any, IO] =
@@ -24,10 +24,8 @@ class UserControllerLive private (service: UserService[IO]) extends UserControll
         _ => ???
   override val getById: ServerEndpoint[Any, IO] =
     getUserEndpoint.serverLogic(service.getById(_).attempt)
-
   override def routes: List[ServerEndpoint[Any, IO]] =
     List(login, register, logout, getById)
-}
 
 object UserControllerLive:
   def make(service: UserService[IO]): IO[UserController[IO]] =
