@@ -10,4 +10,5 @@ target
 metals.sbt
 project/project
 
-/src/main/resources/application.conf
+# configuration files
+**/resources/application.conf

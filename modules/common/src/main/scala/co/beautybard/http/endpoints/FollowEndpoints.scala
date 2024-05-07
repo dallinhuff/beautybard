@@ -10,17 +10,17 @@ import sttp.tapir.generic.auto.*
 
 import java.util.UUID
 
-trait FollowEndpoints extends Endpoints {
+trait FollowEndpoints extends Endpoints:
   private val followEndpoint =
     baseEndpoint
       .tag("follow")
       .in("follow")
-    
+
   private val secureFollowEndpoint =
     secureEndpoint
       .tag("follow")
       .in("follow")
-    
+
   val followUserEndpoint: Endpoint[String, FollowRequest, Throwable, FollowResponse, Any] =
     secureFollowEndpoint
       .name("follow")
@@ -28,7 +28,7 @@ trait FollowEndpoints extends Endpoints {
       .post
       .in(jsonBody[FollowRequest])
       .out(jsonBody[FollowResponse])
-    
+
   val unfollowUserEndpoint: Endpoint[String, UnfollowRequest, Throwable, UnfollowResponse, Any] =
     secureFollowEndpoint
       .name("unfollow")
@@ -36,7 +36,7 @@ trait FollowEndpoints extends Endpoints {
       .delete
       .in(jsonBody[UnfollowRequest])
       .out(jsonBody[UnfollowResponse])
-    
+
   val followSummaryEndpoint: PublicEndpoint[UUID, Throwable, FollowSummary, Any] =
     followEndpoint
       .name("summary")
@@ -44,7 +44,7 @@ trait FollowEndpoints extends Endpoints {
       .get
       .in("summary" / path[UUID]("id"))
       .out(jsonBody[FollowSummary])
-    
+
   val getFollowersEndpoint: PublicEndpoint[(UUID, PageParams), Throwable, List[User], Any] =
     followEndpoint
       .name("followers")
@@ -62,4 +62,3 @@ trait FollowEndpoints extends Endpoints {
       .in("following" / path[UUID]("id"))
       .in(paged)
       .out(jsonBody[List[User]])
-}

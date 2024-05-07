@@ -4,7 +4,7 @@ import cats.effect.{IO, Resource}
 import cats.syntax.all.*
 import co.beautybard.domain.data.user.{FullUser, User, UserCredentials}
 import skunk.*
-import skunk.codec.all.{text, *}
+import skunk.codec.all.*
 import skunk.syntax.all.*
 
 import java.util.UUID

@@ -17,7 +17,7 @@ object Main extends IOApp:
         .customiseInterceptors[IO]
         .metricsInterceptor(HttpApi.prometheusMetrics.metricsInterceptor())
         .options
-    
+
     val port = sys.env.get("HTTP_PORT") >>= (_.toIntOption) >>= Port.fromInt
 
     val server = for

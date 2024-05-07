@@ -2,7 +2,6 @@ package co.beautybard.domain.data
 
 import cats.syntax.all.*
 import io.circe
-import skunk.codec.all.*
 
 import java.util.UUID
 
