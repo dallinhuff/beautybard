@@ -14,6 +14,7 @@ val tapirVersion = "1.10.6"
 
 val commonDependencies = Seq(
   "com.softwaremill.sttp.tapir"   %% "tapir-json-circe" % tapirVersion,
+  "io.circe" %% "circe-parser" % "0.14.7",
   "com.softwaremill.sttp.client3" %% "circe"            % "3.9.5"
 )
 
@@ -50,8 +51,9 @@ lazy val app = project
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("co.beautybard")))
     },
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "2.4.0",
-      "com.raquo"    %%% "laminar"     % "15.0.1"
+      "org.scala-js"  %%% "scalajs-dom" % "2.4.0",
+      "io.frontroute" %%% "frontroute"  % "0.18.2",
+      "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client" % "1.10.6"
     )
   )
   .dependsOn(common.js)
