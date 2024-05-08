@@ -1,27 +1,38 @@
-## Quick start
+# BeautyBard
 
-If you don't have [sbt](https://www.scala-sbt.org) installed already, you can use the provided wrapper script:
+### Installation/Running
 
-```shell
-./sbtx -h # shows an usage of a wrapper script
-./sbtx compile # build the project
-./sbtx test # run the tests
-./sbtx run # run the application (Main)
+#### Client
+
+(One time) To run the frontend dev server, you'll need to install the node dependencies in the `app` module.
+```sh
+$ cd modules/app
+$ npm i
 ```
 
-For more details check the [sbtx usage](https://github.com/dwijnand/sbt-extras#sbt--h) page.
-
-Otherwise, if sbt is already installed, you can use the standard commands:
-
-```shell
-sbt compile # build the project
-sbt test # run the tests
-sbt run # run the application (Main)
+Once the dependencies are installed, in a terminal window, run
+```sh
+$ sbt '~app/fastLinkJS'
 ```
+to start the incremental compiler. This will listen for changes to source files
+in the `app` and `common` modules, and re-build the ES/JS module for the vite project.
 
-## Links:
+In another terminal window, run
+```sh
+$ npm run dev
+```
+to start the vite dev server, which will listen for changes to the files generated from
+the sbt task and automatically reload the page as updates are made.
 
-* [tapir documentation](https://tapir.softwaremill.com/en/latest/)
-* [tapir github](https://github.com/softwaremill/tapir)
-* [bootzooka: template microservice using tapir](https://softwaremill.github.io/bootzooka/)
-* [sbtx wrapper](https://github.com/dwijnand/sbt-extras#installation)
+#### Server
+
+(One time) To run the backend/api server, you'll need to create an `application.conf` file under
+`src/main/resources` in the `server` module. See `application.conf.example` to see what needs to be set.
+
+To set up a Postgres/CockroachDB instance with the right tables, you can use the script in `sql/init.sql`.
+
+Once you have the config file set up, run
+```sh
+$ sbt 'server/runMain co.beautyBard.Main'
+```
+to start the server.
