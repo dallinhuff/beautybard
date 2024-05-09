@@ -16,8 +16,8 @@ object Header:
         ul(
           cls := "menu menu-horizontal px-1",
           li(a(href := "/feed", "Feed")),
-          li(a(href := "/brands", "Brands")),
-          li(a(href := "/products", "Products"))
+          li(a(href := "/products", "Products")),
+          li(a(href := "/reviews", "Reviews"))
         )
       ),
       div(
@@ -26,7 +26,7 @@ object Header:
           cls := "menu menu-horizontal px-1",
           children <-- Session.userState.signal.map: t =>
             if t.isEmpty then
-              li(a(href := "/register", "Sign up")) :: li(a(href := "/login", "Log in")) :: Nil
+              li(a(href := "/login", "Log in")) :: Nil
             else
               li(a(href := "/profile", "Profile")) :: Nil
         )
