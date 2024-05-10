@@ -11,5 +11,23 @@ export default {
   plugins: [
     require('daisyui'),
   ],
+  daisyui: {
+    themes: [
+      {
+        light: {
+          ...require('daisyui/src/theming/themes').valentine
+        }
+      },
+      {
+        dark: {
+          ...require('daisyui/src/theming/themes').dim,
+          ...Object.fromEntries(
+            Object.entries(require('daisyui/src/theming/themes').valentine)
+              .filter(([k]) => k.startsWith('--'))
+          )
+        }
+      },
+    ]
+  }
 }
 
