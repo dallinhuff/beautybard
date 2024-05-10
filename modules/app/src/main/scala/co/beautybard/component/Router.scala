@@ -1,10 +1,11 @@
 package co.beautybard.component
 
 import co.beautybard.page.NotFoundPage
-import co.beautybard.page.feed.FeedPage
-import co.beautybard.page.login.LoginPage
+import co.beautybard.page.home.HomePage
+import co.beautybard.page.login.{LoginPage, RegisterPage}
+import co.beautybard.page.products.ProductsPage
 import co.beautybard.page.profile.ProfilePage
-import co.beautybard.page.register.RegisterPage
+import co.beautybard.page.reviews.ReviewsPage
 import com.raquo.laminar.api.L.{*, given}
 import frontroute.*
 
@@ -13,8 +14,10 @@ object Router {
     mainTag(
       routes(
         div(
-          cls := "px-8",
-          (pathEnd | path("feed"))(FeedPage()),
+          cls := "relative px-8",
+          (pathEnd | path("home"))(HomePage()),
+          path("products")(ProductsPage()),
+          path("reviews")(ReviewsPage()),
           path("login")(LoginPage()),
           path("register")(RegisterPage()),
           path("profile")(ProfilePage()),

@@ -2,6 +2,7 @@ package co.beautybard.component
 
 import com.raquo.laminar.api.L.{*, given}
 import co.beautybard.core.Session
+import co.beautybard.icon.{Home, ShoppingBag, Star, UserCircle}
 
 object Header:
   def apply(): Element =
@@ -15,9 +16,9 @@ object Header:
         cls := "navbar-center",
         ul(
           cls := "menu menu-horizontal px-1",
-          li(a(href := "/feed", "Feed")),
-          li(a(href := "/products", "Products")),
-          li(a(href := "/reviews", "Reviews"))
+          li(a(href := "/home", Home("h-5"), "Home")),
+          li(a(href := "/products", ShoppingBag("h-5"), "Products")),
+          li(a(href := "/reviews", Star("h-5"), "Reviews"))
         )
       ),
       div(
@@ -26,9 +27,13 @@ object Header:
           cls := "menu menu-horizontal px-1",
           children <-- Session.userState.signal.map: t =>
             if t.isEmpty then
-              li(a(href := "/login", "Log in")) :: Nil
+                li(a(href := "/login", UserCircle("h-5"), "Log in"))
+                :: li(ThemeControl("h-5"))
+                :: Nil
             else
-              li(a(href := "/profile", "Profile")) :: Nil
+              li(ThemeControl())
+                :: li(a(href := "/profile", "Profile"))
+                :: Nil
         )
       )
     )
